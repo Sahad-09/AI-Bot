@@ -7,10 +7,36 @@ import { useState } from "react";
 
 function App() {
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSend = async () => {
-    const res = await sendMsgToOpenAI(input);
-    console.log(res);
+    // Input validation
+    if (!input.trim()) {
+      setError("Please enter a message");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const res = await sendMsgToOpenAI(input);
+      console.log(res);
+      setInput(""); // Clear input after successful send
+    } catch (err) {
+      setError(err.message || "Failed to send message");
+      console.error("Error sending message:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   return (
@@ -44,6 +70,7 @@ function App() {
           </div>
         </div>
         <div className="chatFooter">
+          {error && <div className="error-message">{error}</div>}
           <div className="inp">
             <input
               type="text"
@@ -51,9 +78,16 @@ function App() {
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
+                if (error) setError(""); // Clear error when user starts typing
               }}
+              onKeyPress={handleKeyPress}
+              disabled={isLoading}
             />
-            <button className="send" onClick={handleSend}>
+            <button 
+              className="send" 
+              onClick={handleSend}
+              disabled={isLoading || !input.trim()}
+            >
               <img src={sendBtn} alt="" />
             </button>
           </div>
